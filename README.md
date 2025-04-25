@@ -31,11 +31,16 @@ Bu proje, STM32F407VG mikrodenetleyicisi üzerinde **Timer Output Compare (OC)**
 | Frekans     | 2 Hz (toggle için)     |
 | GPIO        | GPIOD_PIN_14 (LED)     |
 
-> **Hesaplama:**  
-> - 84 MHz / (8399 + 1) = 10 kHz  
-> - 10.000 Hz / (4999 + 1) = 2 Hz ⇒ Toggle her 0.5 saniyede bir
+## Hesaplama
+![LED_TOGGLE_OC](https://github.com/user-attachments/assets/e7ca0cb0-b49c-444b-92ab-8759a29eb6c2)
 
----
+## Proje Videosu
 
-## 📂 Proje Yapısı
+
+
+https://github.com/user-attachments/assets/8a47fbfe-2fbc-4c0d-bf8e-57f548d7181d
+
+
+
+
 
