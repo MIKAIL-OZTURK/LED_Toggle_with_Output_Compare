@@ -32,7 +32,7 @@ Bu proje, STM32F407VG mikrodenetleyicisi üzerinde **Timer Output Compare (OC)**
 | GPIO        | GPIOD_PIN_14 (LED)     |
 
 ## Hesaplama
-![LED_TOGGLE_OC](https://github.com/user-attachments/assets/e7ca0cb0-b49c-444b-92ab-8759a29eb6c2)
+
 
 ## Proje Videosu
 
