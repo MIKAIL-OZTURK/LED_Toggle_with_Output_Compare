@@ -2,6 +2,18 @@
 
 Bu proje, STM32F407VG mikrodenetleyicisi üzerinde **Timer Output Compare (OC)** modunu kullanarak belirli bir zaman aralığında bir LED’in toggle edilmesini (yak-sön) sağlamaktadır.
 
+
+## Temel Bilgilendirme
+### Timer Output Compare (OC) Mode Nedir ?                                      
+Output compare yani çıkış karşılaştırma modu mikrodenetleyicinin timer biriminde çıkış karşılatırma registerına(CCRx) yazılan değer ile sayaç registerındaki(CNT) değer eşleştiği zaman mikrodenetleyicide çıkış (toggle, interrupt, PWM, vb.) oluşturmaya yarayan özelliktir. 
+
+```c
+if(CCRx == CNT) {
+    // Toggle, Interrupt, PWM...
+}
+```
+Elbette bu karşılaştırma donanım (peripheral) içinde otomatik olarak gerçekleşir. Kodun içinde manuel if (CNT == CCR) gibi bir şey göremeyiz. Karşılaştırmayı timer donanımı kendi içinde yapar, eğer eşitlik sağlanırsa donanım belirttiğimiz moda göre bir olay üretir (toggle, interrupt, PWM, vb.), eğer IT (interrupt) aktifse, kesme çağrılır.
+
 ---
 
 ## 🎯 Proje Amacı
