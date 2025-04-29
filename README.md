@@ -1,36 +1,36 @@
 # 🟢 STM32 Output Compare ile Periyodik LED Toggle
 
-Bu proje, STM32F407VG mikrodenetleyicisi üzerinde **Timer Output Compare (OC)** modunu kullanarak belirli bir zaman aralığında bir LED’in toggle edilmesini (yak-sön) sağlamaktadır.
+Bu proje, STM32F407VG mikrodenetleyicisi üzerinde Timer Output Compare (OC) modunu kullanarak, belirli aralıklarla bir LED’in periyodik olarak toggle edilmesini (yakıp söndürülmesini) sağlar.
 
-
-## Temel Bilgilendirme
-### Timer Output Compare (OC) Mode Nedir ?                                      
-Output compare yani çıkış karşılaştırma modu mikrodenetleyicinin timer biriminde çıkış karşılatırma registerına(CCRx) yazılan değer ile sayaç registerındaki(CNT) değer eşleştiği zaman mikrodenetleyicide çıkış (toggle, interrupt, PWM, vb.) oluşturmaya yarayan özelliktir. 
+## 📚 Genel Bilgilendirme
+### 🧭 Output Compare (OC) Nedir?
+Output Compare, bir zamanlayıcının sayacı (CNT) ile karşılaştırma register’ı (CCR) eşitlendiğinde bir olay (toggle, kesme, PWM vb.) üretmesini sağlayan bir zamanlayıcı modudur. Bu karşılaştırma mikrodenetleyicinin donanımı tarafından gerçekleştirilir.
 
 ```c
-if(CCRx == CNT) {
+if (CNT == CCRx) {
     // Toggle, Interrupt, PWM...
 }
 ```
-Elbette bu karşılaştırma donanım (peripheral) içinde otomatik olarak gerçekleşir. Kodun içinde manuel if (CNT == CCR) gibi bir şey göremeyiz. Karşılaştırmayı timer donanımı kendi içinde yapar, eğer eşitlik sağlanırsa donanım belirttiğimiz moda göre bir olay üretir (toggle, interrupt, PWM, vb.), eğer IT (interrupt) aktifse, kesme çağrılır. (Ben uygulamamda interrupt ile led toggle gerçekleştirdim.)
+> Uygulamada bu karşılaştırma donanım seviyesinde yapılır. Kodda doğrudan if (CNT == CCRx) gibi bir yapı görmeyiz. Eğer kesme (interrupt) aktifse, belirlenen olay kesme fonksiyonu aracılığıyla gerçekleştirilir.
+> Bu projede LED toggle işlemi kesme ile yapılmaktadır.
 
----
 
-## 🎯 Proje Amacı
 
-- Timer’ın Output Compare modunu pratik olarak öğrenmek
-- Belirli bir periyotta çalışan kesme (interrupt) sistemi kurmak
-- GPIO kontrolünü zamanlayıcı tabanlı hale getirmek
+## 🎯 Proje Amaçları
+- Timer’ın Output Compare modunun pratik olarak uygulanması              
+- Periyodik kesme (interrupt) mekanizmasının kurulması                 
+- GPIO kontrolünün zamanlayıcı tabanlı gerçekleştirilmesi                     
 
----
 
-## ⚙️ Kullanılan Geliştirme Ortamı
+## ⚙️ Geliştirme Ortamı
 
-- STM32CubeIDE 1.14.0
-- STM32CubeMX
-- STM32F407VG Discovery / Nucleo-64 (veya benzeri)
+| Bileşen            | Sürüm / Donanım             |
+|--------------------|-----------------------------|
+| IDE                | STM32CubeIDE 1.14.0         |
+| Konfigürasyon Aracı| STM32CubeMX                 |
+| Hedef Donanım      | STM32F407VG Discovery       |
 
----
+
 
 ## 🔧 Donanım Ayarları
 
@@ -44,72 +44,74 @@ Elbette bu karşılaştırma donanım (peripheral) içinde otomatik olarak gerç
 
 
 
-## Proje Kod Açıklaması
-**1. İstenilen değerlere göre zamanlayıcının Prescaler ve ARR değerleri belirlenir.**
+## 🧠 Uygulama Mantığı
 
-Uygulamada 0.5 saniyelik LED_Toggle işlemi istenmektedir. 
+
+### ⏱️ 1. Zamanlama Hesabı
+LED’in 0.5 saniyede bir toggle olması için timer frekansı şöyle hesaplanır:
+
 ```
-Timer_Frekans = (Sistem_Clock) / ((Prescaler + 1) x (ARR + 1))
-
-0.5 saniye = 2 Hz (f = 1/T)-->
-
-2 = ( 84 MHz ) / ((Prescaler + 1) x (ARR + 1))
-
-Prescaler: 8399
-ARR: 4999
+f = System Clock / ((Prescaler + 1) × (ARR + 1))
+Uygulama frekansı: 2 Hz (0.5 saniyede bir toggle)
 ```
 
 
-**2. Timer başlatılır.**
+```
+2 = 84 MHz / ((8399 + 1) × (4999 + 1))
+Bu değerlere göre:
+Prescaler = 8399
+ARR = 4999
+```
 
-
+### ▶️ 2. Timer Başlatılması
 ```c
-      HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
+HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
 ```
-Böylece Timer2'nin CNT (sayaç) değeri sürekli artar. Bu değer CCRx register’larda tanımladığımız eşik değerine ulaştığında, donanım kesme fonksiyonunu çağırır. 
 
-**Peki uygulamamızda CCRx değerimiz nedir ?**
+Bu komut ile TIM2 sayacı başlatılır ve Output Compare kesmesi aktif hale gelir.
+
+### 💡 3. Compare Değeri ve Kesme
+Compare değeri olarak sıfır atanmıştır:
 
 ```c
 sConfigOC.Pulse = 0;
 ```
 
-Donanım, CNT değeri 0 olduğunda compare match tetiklenir ve kesme fonksiyonu çağrılır.
+CNT değeri 0 olduğunda ilk karşılaştırma gerçekleşir ve kesme fonksiyonu tetiklenir.
 
-**3. Kesme Fonksiyonu**
+### 🧩 4. Kesme Fonksiyonları
+Interrupt Handler:
+
 ```c
-//stm32f4xxx.it.c
 void TIM2_IRQHandler(void)
 {
-  HAL_TIM_IRQHandler(&htim2);
-}
-
-//main.c
-void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
-{
-	if(htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
-	{
-		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);        // 0.5 saniyede bir LED_Toggle işlemi gerçekleşir.
-	}
+    HAL_TIM_IRQHandler(&htim2);
 }
 ```
 
-**Temel Kod Yapısı -->**
 
-1. CNT her clock tick'inde artar →
-2. CNT == CCR1 olduğunda →
-3. Compare Match olur →
-4. Eğer kesme açıksa → NVIC kesmeyi alır →
-5. TIM2_IRQHandler → HAL_TIM_IRQHandler →
-6. HAL_TIM_OC_DelayElapsedCallback fonksiyonu çağrılır
+Callback Fonksiyonu:
+```c
+void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if(htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
+    {
+        HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);  // LED 0.5 saniyede bir toggle olur.
+    }
+}
+```
 
+
+### 🔁 Akış Diyagramı
+1. CNT her clock tick’inde artar
+2. CNT == CCR olduğunda karşılaştırma gerçekleşir
+3. Eğer kesme aktifse → NVIC tetiklenir
+4. TIM2_IRQHandler çağrılır
+5. HAL_TIM_OC_DelayElapsedCallback() içinde LED toggle yapılır
 
 
 
 ## Proje Videosu
-
-
-
 https://github.com/user-attachments/assets/8a47fbfe-2fbc-4c0d-bf8e-57f548d7181d
 
 
